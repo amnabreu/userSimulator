@@ -1,0 +1,31 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    APIKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  schemas:
+    APIError:
+      description: defines the structure of an API error response
+      type: object
+      properties:
+        message:
+          type: string
+          x-go-type: interface{}
+        code:
+          type: integer
+        internal:
+          type: string
+          x-go-type: error
+          x-go-json-ignore: true
+        errors:
+          type: object
+          x-go-type: ErrorMap
+      required:
+        - message
+        - code
+        - internal
