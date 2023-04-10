@@ -1,0 +1,339 @@
+paths:
+  /core/stacks:
+    post:
+      summary: Create stack
+      description: Create stack
+      operationId: create-stack
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      requestBody:
+        description: Stack
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StackCreateRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+    get:
+      summary: List stacks
+      description: List stacks
+      operationId: list-stacks
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StackListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+  /core/stacks/{slug}:
+    get:
+      summary: Get stack
+      description: Get stack
+      operationId: get-stack
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      parameters:
+        - name: slug
+          in: path
+          description: Stack slug
+          required: true
+          schema:
+            type: string
+            format: slug
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+  /core/repos:
+    post:
+      summary: Create repo
+      description: Create repo
+      operationId: create-repo
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      requestBody:
+        description: Repo
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepoCreateRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repo'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+
+    get:
+      summary: List Repos
+      description: List Repos
+      operationId: list-repos
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoListResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+  /core/repos/{id}:
+    get:
+      summary: Get repo
+      description: Get repo
+      operationId: get-repo
+      security:
+        - BearerAuth: []
+        - APIKeyAuth: []
+      tags:
+        - core
+      parameters:
+        - name: id
+          in: path
+          description: Repo ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            x-go-type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repo'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../shared/openapi.spec.yaml#/components/schemas/APIError'
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: '../shared/openapi.spec.yaml#/components/securitySchemes/BearerAuth'
+    APIKeyAuth:
+      $ref: '../shared/openapi.spec.yaml#/components/securitySchemes/APIKeyAuth'
+
+  schemas:
+    StackCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        config:
+          $ref: '#/components/schemas/StackConfig'
+      required:
+        - name
+        - config
+
+    StackListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Stack'
+
+    RepoCreateRequest:
+      type: object
+      properties:
+        stack_id:
+          type: string
+          format: uuid
+          x-go-name: StackID
+          x-go-type: gocql.UUID
+        provider:
+          $ref: '#/components/schemas/RepoProvider'
+        provider_id:
+          type: string
+          x-go-name: ProviderID
+        default_branch:
+          type: string
+        is_monorepo:
+          type: boolean
+      required:
+        - stack_id
+        - provider
+        - provider_id
+        - default_branch
+        - is_monorepo
+
+    RepoListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Repo'
+
+    Stack:
+      type: object
+      x-breu-entity: stacks
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-go-name: ID
+          x-go-type: gocql.UUID
+        team_id:
+          type: string
+          format: uuid
+          x-go-name: TeamID
+          x-go-type: gocql.UUID
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: required
+        slug:
+          type: string
+          format: slug
+        config:
+          $ref: '#/components/schemas/StackConfig'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - team_id
+        - name
+        - slug
+        - config
+        - created_at
+        - updated_at
+
+    StackConfig:
+      type: object
+      additionalProperties: true
+
+    Repo:
+      type: object
+      x-breu-entity: repos
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-go-name: ID
+          x-go-type: gocql.UUID
+        stack_id:
+          type: string
+          format: uuid
+          x-go-name: StackID
+          x-go-type: gocql.UUID
+        provider:
+          $ref: '#/components/schemas/RepoProvider'
+        provider_id:
+          type: string
+          x-go-name: ProviderID
+        default_branch:
+          type: string
+        is_monorepo:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - stack_id
+        - provider
+        - provider_id
+        - default_branch
+        - is_monorepo
+        - created_at
+        - updated_at
+
+    RepoProvider:
+      type: string
+      enum:
+        - github
+        - gitlab
+        - bitbucket

@@ -2,124 +2,85 @@ package main
 
 import (
 	"context"
-	"log"
-	"net/http"
+	"fmt"
 
 	"go.breu.io/ctrlplane/internal/auth"
+	"go.breu.io/ctrlplane/internal/core"
 	"go.breu.io/ctrlplane/internal/providers/github"
+	"go.breu.io/ctrlplane/internal/shared"
 )
 
 func main() {
 
 	ctx := context.Background()
 	url := "http://localhost:8000"
-	authclient, gitClient := SetupAPIClient(url)
 
-	RegisterRequest(ctx, authclient)
-	accessToken := LoginRequest(ctx, authclient)
+	authClient := &auth.AuthClient{}
+	gitClient := &github.GithubClient{}
+	coreClient := &core.CoreClient{}
 
-	ctx = context.WithValue(ctx, "url", url)
-	ctx = context.WithValue(ctx, "access_token", accessToken)
-	CompleteInstallation(ctx, gitClient)
+	authClient.SetupAPIClient(url)
+	gitClient.SetupAPIClient(url)
+	coreClient.SetupAPIClient(url)
 
-}
+	ctx = context.WithValue(ctx, shared.URL, url)
+	var installationId string
 
-func CompleteInstallation(ctx context.Context, client *github.Client) {
+	for {
+		println(`please select the option 
+		1. Register user
+		2. Login user
+		3. Installation webhook 
+		4. Installation complete
+		5. Pull request
+		6. Create stack and test repo`,
+		)
 
-	completeInstallationBody := github.CompleteInstallationRequest{}
-	completeInstallationBody.InstallationId = 35046675
-	completeInstallationBody.SetupAction = github.SetupActionCreated
+		var option int
+		fmt.Scan(&option)
 
-	response := validateHttpResponse(client.GithubCompleteInstallation(ctx, completeInstallationBody, AddAuthHeader))
-	parsedResp, err := github.ParseGithubCompleteInstallationResponse(response)
-	if err != nil {
-		log.Panicf("Error: Unable to parse register response: %v", err)
-	}
+		switch option {
+		case 1:
+			authClient.RegisterRequest(ctx)
+		case 2:
+			accessToken := authClient.LoginRequest(ctx)
+			ctx = context.WithValue(ctx, shared.UserAccessToken, accessToken)
+		case 3:
+			installationId = readInstallationId(installationId)
+			gitClient.GithubWebhookAppInstalled(ctx, installationId)
 
-	log.Printf("Run ID: %s, status: %s", parsedResp.JSON200.RunID, parsedResp.JSON200.Status)
-}
+		case 4:
+			installationId = readInstallationId(installationId)
+			gitClient.CompleteInstallation(ctx, installationId)
+		case 5:
+			installationId = readInstallationId(installationId)
+			gitClient.GithubWebHookPullRequest(ctx, installationId)
+		case 6:
+			installationId = "123456789"
+			stackName := "AWS stack"
+			providerID := "611620220"
+			stackID, err := coreClient.CreateStack(ctx, stackName)
+			if err != nil {
+				fmt.Printf("Unable to create stack, error:%v", err)
+				break
+			}
 
-func validateHttpResponse(response *http.Response, err error) *http.Response {
-	if err != nil {
-		log.Panicf("Request failed with error: %v", err)
-	}
+			coreClient.CreateRepo(ctx, stackID, providerID)
 
-	if response.StatusCode != 200 {
-		log.Panicf("Error: complete Installation requested failed with status: %d", response.StatusCode)
-	}
-
-	return response
-}
-
-func AddAuthHeader(ctx context.Context, req *http.Request) error {
-
-	req.Header.Set("authorization", "Token "+ctx.Value("access_token").(string))
-	return nil
-}
-
-func SetupAPIClient(url string) (*auth.Client, *github.Client) {
-	authclient, err := auth.NewClient(url)
-	if err != nil {
-		println("failed to create api client for auth: %v", err)
-	}
-
-	gitclient, err := github.NewClient(url)
-	if err != nil {
-		println("failed to create api client for github: %v", err)
-	}
-
-	return authclient, gitclient
-}
-
-func RegisterRequest(ctx context.Context, client *auth.Client) {
-	registerRequestBody := auth.RegisterationRequest{}
-	registerRequestBody.FirstName = "Amna"
-	registerRequestBody.LastName = "Tehreem"
-	registerRequestBody.Email = "amna@breu.io"
-	registerRequestBody.Password = "amna"
-	registerRequestBody.ConfirmPassword = "amna"
-	registerRequestBody.TeamName = "ctrlplane"
-
-	response, err := client.Register(ctx, registerRequestBody)
-
-	if err != nil {
-		panic("Error: Unable to register user")
-	}
-
-	parsedResp, err := auth.ParseRegisterResponse(response)
-
-	if err != nil {
-		panic("Error: Unable to parse register response")
-	}
-
-	switch response.StatusCode {
-	case 200:
-		log.Println("new user added")
-		return
-	case 400:
-		err, _ := parsedResp.JSON400.Errors.Get("email")
-		if err == "already exists" {
-			log.Println("User already exists")
-		} else {
-			panic("Unable to register user")
+		default:
+			println("Please select valid option")
 		}
-	default:
-		panic("Unable to register user")
 	}
+
 }
 
-func LoginRequest(ctx context.Context, client *auth.Client) string {
-	loginRequestBody := auth.LoginRequest{}
-	loginRequestBody.Email = "amna@breu.io"
-	loginRequestBody.Password = "amna"
-
-	response := validateHttpResponse(client.Login(ctx, loginRequestBody))
-	parsedResp, err := auth.ParseLoginResponse(response)
-
-	if err != nil {
-		panic("Error: Unable to parse Login response")
+func readInstallationId(installId string) string {
+	var id string
+	fmt.Print("Enter installation id, press enter to use previous installation id:")
+	fmt.Scan(&id)
+	if id == "" {
+		return installId
+	} else {
+		return id
 	}
-
-	return parsedResp.JSON200.AccessToken
-
 }
