@@ -19,7 +19,8 @@ func ValidateHttpResponse(response *http.Response, err error) *http.Response {
 	}
 
 	if !(response.StatusCode == 200 || response.StatusCode == 201) {
-		fmt.Printf("Error: complete Installation requested failed with status: %d", response.StatusCode)
+		fmt.Printf("Error: request failed with status: %d", response.StatusCode)
+		fmt.Println()
 	}
 
 	return response

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/gocql/gocql"
 	"go.breu.io/ctrlplane/internal/shared"
@@ -34,16 +35,38 @@ func (c *CoreClient) CreateStack(ctx context.Context, stackName string) (gocql.U
 	return parsedResp.JSON201.ID, nil
 }
 
-func (c *CoreClient) CreateRepo(ctx context.Context, stackID gocql.UUID, providerID string) {
+func (c *CoreClient) CreateRepo(ctx context.Context, request RepoCreateRequest) gocql.UUID {
+	response := shared.ValidateHttpResponse(c.client.CreateRepo(ctx, request, shared.AddAuthHeader))
+	fmt.Printf("The following repo is successfully created")
+	body, _ := io.ReadAll(response.Body)
+	fmt.Println(string(body[:]))
 
-	crbody := RepoCreateRequest{
-		StackID:       stackID,
-		Provider:      "github",
-		IsMonorepo:    false,
-		DefaultBranch: "main",
-		ProviderID:    providerID,
+	parsedresp, err := ParseCreateRepoResponse(response)
+	if err != nil {
+		panic(fmt.Sprintf("unable to parse create repo response: %v", err))
 	}
 
-	shared.ValidateHttpResponse(c.client.CreateRepo(ctx, crbody, shared.AddAuthHeader))
-	fmt.Printf("Repo created")
+	return parsedresp.JSON201.ID
+
+}
+
+func (c *CoreClient) CreateResource(ctx context.Context, request ResourceCreateRequest) {
+	response := shared.ValidateHttpResponse(c.client.CreateResource(ctx, request, shared.AddAuthHeader))
+	fmt.Println("The following resource is successfully created")
+	body, _ := io.ReadAll(response.Body)
+	fmt.Println(string(body[:]))
+}
+
+func (c *CoreClient) CreateWorkload(ctx context.Context, request WorkloadCreateRequest) {
+	response := shared.ValidateHttpResponse(c.client.CreateWorkload(ctx, request, shared.AddAuthHeader))
+	fmt.Println("The following workload is successfully created")
+	body, _ := io.ReadAll(response.Body)
+	fmt.Println(string(body[:]))
+}
+
+func (c *CoreClient) CreateBlueprint(ctx context.Context, request BlueprintCreateRequest) {
+	response := shared.ValidateHttpResponse(c.client.CreateBlueprint(ctx, request, shared.AddAuthHeader))
+	fmt.Println("The following blueprint is successfully created")
+	body, _ := io.ReadAll(response.Body)
+	fmt.Println(string(body[:]))
 }
