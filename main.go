@@ -42,6 +42,7 @@ func main() {
 
 	var installationId string
 
+	stackID, _ := gocql.ParseUUID("00cac1f7-6f09-4cf4-8221-f4b8caf1cce3")
 	for {
 		println(`please select the option 
 		1. Register user
@@ -58,7 +59,6 @@ func main() {
 		fmt.Scan(&option)
 
 		installationId = "123456789"
-		stackID, _ := gocql.ParseUUID("00cac1f7-6f09-4cf4-8221-f4b8caf1cce3")
 
 		switch option {
 		case 1:
@@ -72,12 +72,7 @@ func main() {
 			gitClient.CompleteInstallation(ctx, installationId)
 		case 4:
 			stackName := "AWS stack"
-			stackID, err := coreClient.CreateStack(ctx, stackName)
-			if err != nil {
-				fmt.Printf("Unable to create stack, error:%v", err)
-				break
-			}
-
+			stackID, _ = coreClient.CreateStack(ctx, stackName)
 			ctx = createRepos(ctx, stackID)
 		case 5:
 			createResources(ctx, stackID)
@@ -98,11 +93,11 @@ func main() {
 }
 
 func createRepos(ctx context.Context, stackID gocql.UUID) context.Context {
-	request := core.RepoCreateRequest{Name: "snspublisher", ProviderID: "620175899", DefaultBranch: "main", Provider: "github", IsMonorepo: true, StackID: stackID}
+	request := core.RepoCreateRequest{Name: "snspublisher", ProviderID: "620175899", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
 	id := coreClient.CreateRepo(ctx, request)
 	ctx = context.WithValue(ctx, "sns_repo_id", id)
 
-	request = core.RepoCreateRequest{Name: "sqssubscriber", ProviderID: "620179406", DefaultBranch: "main", Provider: "github", IsMonorepo: true, StackID: stackID}
+	request = core.RepoCreateRequest{Name: "sqssubscriber", ProviderID: "620179406", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
 	id = coreClient.CreateRepo(ctx, request)
 	ctx = context.WithValue(ctx, "sqs_repo_id", id)
 

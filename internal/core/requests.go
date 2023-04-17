@@ -38,13 +38,12 @@ func (c *CoreClient) CreateStack(ctx context.Context, stackName string) (gocql.U
 func (c *CoreClient) CreateRepo(ctx context.Context, request RepoCreateRequest) gocql.UUID {
 	response := shared.ValidateHttpResponse(c.client.CreateRepo(ctx, request, shared.AddAuthHeader))
 	fmt.Printf("The following repo is successfully created")
-	body, _ := io.ReadAll(response.Body)
-	fmt.Println(string(body[:]))
 
 	parsedresp, err := ParseCreateRepoResponse(response)
 	if err != nil {
 		panic(fmt.Sprintf("unable to parse create repo response: %v", err))
 	}
+	fmt.Println(string(parsedresp.Body[:]))
 
 	return parsedresp.JSON201.ID
 
