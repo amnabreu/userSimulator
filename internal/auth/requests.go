@@ -19,13 +19,8 @@ func (c *AuthClient) SetupAPIClient(url string) {
 	}
 }
 
-func (c *AuthClient) LoginRequest(ctx context.Context) string {
-	loginRequestBody := LoginRequest{
-		Email:    "amna@breu.io",
-		Password: "amna",
-	}
-
-	response := shared.ValidateHttpResponse(c.client.Login(ctx, loginRequestBody))
+func (c *AuthClient) Login(ctx context.Context, request LoginRequest) string {
+	response := shared.ValidateHttpResponse(c.client.Login(ctx, request))
 	parsedResp, err := ParseLoginResponse(response)
 
 	if err != nil {

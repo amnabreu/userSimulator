@@ -11,6 +11,11 @@ import (
 	"go.breu.io/ctrlplane/internal/shared"
 )
 
+const (
+	EMAIL    = "amna@breu.io"
+	PASSWORD = "amna"
+)
+
 var (
 	coreClient *core.CoreClient
 	gitClient  *github.GithubClient
@@ -36,8 +41,9 @@ func main() {
 	gitClient.SetupAPIClient(url)
 	coreClient.SetupAPIClient(url)
 
+	request := auth.LoginRequest{Email: EMAIL, Password: PASSWORD}
 	ctx = context.WithValue(ctx, shared.URL, url)
-	accessToken := authClient.LoginRequest(ctx)
+	accessToken := authClient.Login(ctx, request)
 	ctx = context.WithValue(ctx, shared.UserAccessToken, accessToken)
 
 	var installationId string
@@ -45,14 +51,14 @@ func main() {
 	stackID, _ := gocql.ParseUUID("00cac1f7-6f09-4cf4-8221-f4b8caf1cce3")
 	for {
 		println(`please select the option 
-		1. Register user
-		2. Login user
 		3. github app Installation
 		4. Create stack and repos
 		5. create resources
 		6. create workload
 		7. create blueprint
-		8. Pull request`,
+		8. create stack, repos, resources, workload, blueprint
+		9. Pull request
+		`,
 		)
 
 		var option int
@@ -64,7 +70,8 @@ func main() {
 		case 1:
 			authClient.RegisterRequest(ctx)
 		case 2:
-			accessToken := authClient.LoginRequest(ctx)
+			request := auth.LoginRequest{Email: EMAIL, Password: PASSWORD}
+			accessToken := authClient.Login(ctx, request)
 			ctx = context.WithValue(ctx, shared.UserAccessToken, accessToken)
 		case 3:
 			// installationId = readInstallationId(installationId)
@@ -84,8 +91,18 @@ func main() {
 			coreClient.CreateBlueprint(ctx, bp)
 
 		case 8:
+			stackName := "AWS stack"
+			stackID, _ = coreClient.CreateStack(ctx, stackName)
+			ctx = createRepos(ctx, stackID)
+			createResources(ctx, stackID)
+			createWorkloads(ctx, stackID)
+			regions := core.BluePrintRegions{Aws: []string{"us-west1"}, Gcp: []string{"asia-southeast1"}}
+			bp := core.BlueprintCreateRequest{Name: "pubsub blueprint", StackID: stackID, RolloutBudget: "300", Regions: regions}
+			coreClient.CreateBlueprint(ctx, bp)
+		case 9:
 			// installationId = readInstallationId(installationId)
 			gitClient.GithubWebHookPullRequest(ctx, installationId)
+
 		default:
 			println("Please select valid option")
 		}
