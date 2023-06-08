@@ -36,6 +36,7 @@ const (
 
 var (
 	ErrInvalidCloudProvider = errors.New("invalid CloudProvider value")
+	ErrInvalidDriver        = errors.New("invalid Driver value")
 	ErrInvalidRepoProvider  = errors.New("invalid RepoProvider value")
 )
 
@@ -73,6 +74,53 @@ func (v *CloudProvider) UnmarshalJSON(data []byte) error {
 	val, ok := CloudProviderMap[s]
 	if !ok {
 		return ErrInvalidCloudProvider
+	}
+
+	*v = val
+
+	return nil
+}
+
+type (
+	DriverMapType map[string]Driver // DriverMapType is a quick lookup map for Driver.
+)
+
+// Defines values for Driver.
+const (
+	DriverCloudrun Driver = "cloudrun"
+	DriverGke      Driver = "gke"
+	DriverPubsub   Driver = "pubsub"
+	DriverS3       Driver = "s3"
+	DriverSns      Driver = "sns"
+	DriverSqs      Driver = "sqs"
+)
+
+// DriverValues returns all known values for Driver.
+var (
+	DriverMap = DriverMapType{
+		DriverCloudrun.String(): DriverCloudrun,
+		DriverGke.String():      DriverGke,
+		DriverPubsub.String():   DriverPubsub,
+		DriverS3.String():       DriverS3,
+		DriverSns.String():      DriverSns,
+		DriverSqs.String():      DriverSqs,
+	}
+)
+
+/*
+ * Helper methods for Driver for easy marshalling and unmarshalling.
+ */
+func (v Driver) String() string               { return string(v) }
+func (v Driver) MarshalJSON() ([]byte, error) { return json.Marshal(v.String()) }
+func (v *Driver) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	val, ok := DriverMap[s]
+	if !ok {
+		return ErrInvalidDriver
 	}
 
 	*v = val
@@ -172,6 +220,9 @@ type BlueprintCreateRequest struct {
 // CloudProvider aws, gcp, azure
 type CloudProvider string
 
+// Driver gke, cloudrun, pubsub, s3, sqs, sns, dynamodb, postgres, mysql etc
+type Driver string
+
 // Repo defines model for Repo.
 type Repo struct {
 	CreatedAt     time.Time    `cql:"created_at" json:"created_at"`
@@ -220,10 +271,12 @@ type RepoProvider string
 
 // Resource Resource defines the cloud provider resources for the app e.g. s3, sqs, etc
 type Resource struct {
+	// Config resource configruation e.g properties, output environment variables etc
+	Config    string    `cql:"config" json:"config"`
 	CreatedAt time.Time `cql:"created_at" json:"created_at"`
 
-	// Driver s3, sqs, sns, dynamodb, postfres, mysql etc
-	Driver      string     `cql:"driver" json:"driver"`
+	// Driver gke, cloudrun, pubsub, s3, sqs, sns, dynamodb, postgres, mysql etc
+	Driver      Driver     `cql:"driver" json:"driver"`
 	ID          gocql.UUID `cql:"id" json:"id"`
 	IsImmutable *bool      `cql:"is_immutable" json:"is_immutable,omitempty"`
 	Name        string     `cql:"name" json:"name"`
@@ -235,7 +288,7 @@ type Resource struct {
 }
 
 var (
-	resourceColumns = []string{"created_at", "driver", "id", "is_immutable", "name", "provider", "stack_id", "updated_at"}
+	resourceColumns = []string{"config", "created_at", "driver", "id", "is_immutable", "name", "provider", "stack_id", "updated_at"}
 
 	resourceMeta = itable.Metadata{
 		M: &table.Metadata{
@@ -253,6 +306,7 @@ func (resource *Resource) GetTable() itable.ITable {
 
 // ResourceCreateRequest defines model for ResourceCreateRequest.
 type ResourceCreateRequest struct {
+	Config    string `json:"config"`
 	Driver    string `json:"driver"`
 	Immutable bool   `json:"immutable"`
 	Name      string `json:"name"`

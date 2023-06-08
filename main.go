@@ -64,7 +64,7 @@ func main() {
 		var option int
 		fmt.Scan(&option)
 
-		installationId = "123456789"
+		installationId = "38385949"
 
 		switch option {
 		case 1:
@@ -110,56 +110,84 @@ func main() {
 }
 
 func createRepos(ctx context.Context, stackID gocql.UUID) context.Context {
-	request := core.RepoCreateRequest{Name: "snspublisher", ProviderID: "620175899", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
+	// request := core.RepoCreateRequest{Name: "snspublisher", ProviderID: "620175899", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
+	// id := coreClient.CreateRepo(ctx, request)
+	// ctx = context.WithValue(ctx, "sns_repo_id", id)
+
+	// request = core.RepoCreateRequest{Name: "sqssubscriber", ProviderID: "620179406", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
+	// id = coreClient.CreateRepo(ctx, request)
+	// ctx = context.WithValue(ctx, "sqs_repo_id", id)
+
+	// request = core.RepoCreateRequest{Name: "test", ProviderID: "611620220", DefaultBranch: "main", Provider: "github", IsMonorepo: true, StackID: stackID}
+	// id = coreClient.CreateRepo(ctx, request)
+	// ctx = context.WithValue(ctx, "test_repo_id", id)
+
+	request := core.RepoCreateRequest{Name: "HelloWorld", ProviderID: "648084184", DefaultBranch: "main", Provider: "github", IsMonorepo: true, StackID: stackID}
 	id := coreClient.CreateRepo(ctx, request)
-	ctx = context.WithValue(ctx, "sns_repo_id", id)
-
-	request = core.RepoCreateRequest{Name: "sqssubscriber", ProviderID: "620179406", DefaultBranch: "master", Provider: "github", IsMonorepo: true, StackID: stackID}
-	id = coreClient.CreateRepo(ctx, request)
-	ctx = context.WithValue(ctx, "sqs_repo_id", id)
-
-	request = core.RepoCreateRequest{Name: "test", ProviderID: "611620220", DefaultBranch: "main", Provider: "github", IsMonorepo: true, StackID: stackID}
-	id = coreClient.CreateRepo(ctx, request)
-	ctx = context.WithValue(ctx, "test_repo_id", id)
+	ctx = context.WithValue(ctx, "hello_world_id", id)
 
 	return ctx
 }
 
 func createResources(ctx context.Context, stackID gocql.UUID) {
-	request := core.ResourceCreateRequest{Name: "SNS_TOPIC", Driver: "SNS", Provider: "AWS", Immutable: true, StackID: stackID}
-	coreClient.CreateResource(ctx, request)
+	// request := core.ResourceCreateRequest{Name: "SNS_TOPIC", Driver: "SNS", Provider: "AWS", Immutable: true, StackID: stackID, Config: ""}
+	// coreClient.CreateResource(ctx, request)
 
-	request = core.ResourceCreateRequest{Name: "SQS_QUEUE", Driver: "SQS", Provider: "AWS", Immutable: true, StackID: stackID}
-	coreClient.CreateResource(ctx, request)
+	// request = core.ResourceCreateRequest{Name: "SQS_QUEUE", Driver: "SQS", Provider: "AWS", Immutable: true, StackID: stackID, Config: ""}
+	// coreClient.CreateResource(ctx, request)
 
-	request = core.ResourceCreateRequest{Name: "GKE_Cluster", Driver: "GEK", Provider: "GCP", Immutable: true, StackID: stackID}
+	// request = core.ResourceCreateRequest{Name: "GKE_Cluster", Driver: "GKE", Provider: "GCP", Immutable: true, StackID: stackID, Config: ""}
+	// coreClient.CreateResource(ctx, request)
+
+	request := core.ResourceCreateRequest{Name: "CloudRun_HelloWorld", Driver: core.DriverCloudrun.String(), Provider: "GCP", Immutable: true, StackID: stackID, Config: `{
+		"properties":{
+		   "generation":"second-generation",
+		   "cpu":"2000m",
+		   "memory":"1024Mi"
+		},
+		"output":{
+		   "env":[
+			  {
+				 "url":"CloudRun_HelloWorld_URL"
+			  }
+		   ]
+		}
+	 }`}
 	coreClient.CreateResource(ctx, request)
 }
 
 func createWorkloads(ctx context.Context, stackID gocql.UUID) {
-	// sns workload
+
 	repoID, _ := gocql.ParseUUID(SNS_REPO_ID)
-	if ctx.Value("sns_repo_id") != nil {
-		repoID = ctx.Value("sns_repo_id").(gocql.UUID)
+	if ctx.Value("hello_world_id") != nil {
+		repoID = ctx.Value("hello_world_id").(gocql.UUID)
 	}
-	request := core.WorkloadCreateRequest{Name: "sns_publisher", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/snsPublisher"}
+	request := core.WorkloadCreateRequest{Name: "hello_world", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/HelloWorld"}
 	coreClient.CreateWorkload(ctx, request)
 
-	// sqs workload
-	repoID, _ = gocql.ParseUUID(SQS_REPO_ID)
-	if ctx.Value("sqs_repo_id") != nil {
-		repoID = ctx.Value("sqs_repo_id").(gocql.UUID)
-	}
-	request = core.WorkloadCreateRequest{Name: "sqs_publisher", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/sqsSubscriber"}
-	coreClient.CreateWorkload(ctx, request)
+	// // sns workload
+	// repoID, _ := gocql.ParseUUID(SNS_REPO_ID)
+	// if ctx.Value("sns_repo_id") != nil {
+	// 	repoID = ctx.Value("sns_repo_id").(gocql.UUID)
+	// }
+	// request := core.WorkloadCreateRequest{Name: "sns_publisher", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/snsPublisher"}
+	// coreClient.CreateWorkload(ctx, request)
 
-	// test workload
-	repoID, _ = gocql.ParseUUID(TEST_REPO_ID)
-	if ctx.Value("test_repo_id") != nil {
-		repoID = ctx.Value("test_repo_id").(gocql.UUID)
-	}
-	request = core.WorkloadCreateRequest{Name: "test_repo", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/testGithubapp"}
-	coreClient.CreateWorkload(ctx, request)
+	// // sqs workload
+	// repoID, _ = gocql.ParseUUID(SQS_REPO_ID)
+	// if ctx.Value("sqs_repo_id") != nil {
+	// 	repoID = ctx.Value("sqs_repo_id").(gocql.UUID)
+	// }
+	// request = core.WorkloadCreateRequest{Name: "sqs_publisher", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/sqsSubscriber"}
+	// coreClient.CreateWorkload(ctx, request)
+
+	// // test workload
+	// repoID, _ = gocql.ParseUUID(TEST_REPO_ID)
+	// if ctx.Value("test_repo_id") != nil {
+	// 	repoID = ctx.Value("test_repo_id").(gocql.UUID)
+	// }
+	// request = core.WorkloadCreateRequest{Name: "test_repo", Kind: "worker", RepoID: repoID, StackID: stackID, RepoPath: "https://github.com/amnabreu/testGithubapp"}
+	// coreClient.CreateWorkload(ctx, request)
 
 }
 
