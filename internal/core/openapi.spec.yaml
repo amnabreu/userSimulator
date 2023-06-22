@@ -364,11 +364,14 @@ components:
           type: string
         regions:
           $ref: '#/components/schemas/BluePrintRegions'
+        provider_config:
+          type: string
       required:
         - name
         - stack_id
         - rollout_budget
         - regions
+        - provider_config
 
     WorkloadCreateRequest:
       type: object
@@ -385,6 +388,11 @@ components:
           format: uuid
           x-go-name: RepoID
           x-go-type: gocql.UUID
+        resource_id:
+          type: string
+          format: uuid
+          x-go-name: ResourceID
+          x-go-type: gocql.UUID
         repo_path:
           type: string
         kind:
@@ -398,6 +406,7 @@ components:
         - stack_id
         - repo_id
         - repo_path
+        - resource_id
         - kind
         - container
         - builder
@@ -505,6 +514,8 @@ components:
           x-go-type: gocql.UUID
         regions:
           $ref: '#/components/schemas/BluePrintRegions'
+        provider_config:
+          type: string
         rollout_budget:
           type: string
         created_at:
@@ -519,6 +530,7 @@ components:
         - stack_id
         - regions
         - rollout_budget
+        - provider_config
         - created_at
         - updated_at
 
@@ -544,6 +556,11 @@ components:
           format: uuid
           x-go-name: RepoID
           x-go-type: gocql.UUID
+        resource_id:
+          type: string
+          format: uuid
+          x-go-name: ResourceID
+          x-go-type: gocql.UUID
         repo_path:
           type: string
         kind:
@@ -567,6 +584,7 @@ components:
         - stack_id
         - repo_id
         - repo_path
+        - resource_id
         - kind
         - container
         - builder
@@ -738,6 +756,24 @@ components:
           type: array
           items:
             type: string
+      required:
+        - gcp
+        - aws
+        - azure
+        - default
+
+    ProviderConfiguration:
+      type: object
+      description: Provider config defines configuration specific to a cloud provider
+      properties:
+        gcp:
+          type: string
+        aws:
+          type: string
+        azure:
+          type: string
+        default:
+          type: string
       required:
         - gcp
         - aws

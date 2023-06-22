@@ -49,11 +49,13 @@ func (c *CoreClient) CreateRepo(ctx context.Context, request RepoCreateRequest) 
 
 }
 
-func (c *CoreClient) CreateResource(ctx context.Context, request ResourceCreateRequest) {
+func (c *CoreClient) CreateResource(ctx context.Context, request ResourceCreateRequest) gocql.UUID {
 	response := shared.ValidateHttpResponse(c.client.CreateResource(ctx, request, shared.AddAuthHeader))
+	parsedresponse, _ := ParseCreateResourceResponse(response)
 	fmt.Println("The following resource is successfully created")
 	body, _ := io.ReadAll(response.Body)
 	fmt.Println(string(body[:]))
+	return parsedresponse.JSON201.ID
 }
 
 func (c *CoreClient) CreateWorkload(ctx context.Context, request WorkloadCreateRequest) {

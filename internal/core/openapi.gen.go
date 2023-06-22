@@ -179,9 +179,10 @@ type BluePrintRegions struct {
 
 // Blueprint Blueprint contains a collection of Workload & Resource to define one single release
 type Blueprint struct {
-	CreatedAt time.Time  `cql:"created_at" json:"created_at"`
-	ID        gocql.UUID `cql:"id" json:"id"`
-	Name      string     `cql:"name" json:"name"`
+	CreatedAt      time.Time  `cql:"created_at" json:"created_at"`
+	ID             gocql.UUID `cql:"id" json:"id"`
+	Name           string     `cql:"name" json:"name"`
+	ProviderConfig string     `cql:"provider_config" json:"provider_config"`
 
 	// Regions BluePrintRegions sets the cloud regions where a blueprint can be deployed
 	Regions       BluePrintRegions `cql:"regions" json:"regions"`
@@ -191,7 +192,7 @@ type Blueprint struct {
 }
 
 var (
-	blueprintColumns = []string{"created_at", "id", "name", "regions", "rollout_budget", "stack_id", "updated_at"}
+	blueprintColumns = []string{"created_at", "id", "name", "provider_config", "regions", "rollout_budget", "stack_id", "updated_at"}
 
 	blueprintMeta = itable.Metadata{
 		M: &table.Metadata{
@@ -209,7 +210,8 @@ func (blueprint *Blueprint) GetTable() itable.ITable {
 
 // BlueprintCreateRequest defines model for BlueprintCreateRequest.
 type BlueprintCreateRequest struct {
-	Name string `json:"name"`
+	Name           string `json:"name"`
+	ProviderConfig string `json:"provider_config"`
 
 	// Regions BluePrintRegions sets the cloud regions where a blueprint can be deployed
 	Regions       BluePrintRegions `json:"regions"`
@@ -370,16 +372,17 @@ type Workload struct {
 	ID        gocql.UUID `cql:"id" json:"id"`
 
 	// Kind Default, worker, job, cronjob
-	Kind      string     `cql:"kind" json:"kind"`
-	Name      string     `cql:"name" json:"name"`
-	RepoID    gocql.UUID `cql:"repo_id" json:"repo_id"`
-	RepoPath  string     `cql:"repo_path" json:"repo_path"`
-	StackID   gocql.UUID `cql:"stack_id" json:"stack_id"`
-	UpdatedAt time.Time  `cql:"updated_at" json:"updated_at"`
+	Kind       string     `cql:"kind" json:"kind"`
+	Name       string     `cql:"name" json:"name"`
+	RepoID     gocql.UUID `cql:"repo_id" json:"repo_id"`
+	RepoPath   string     `cql:"repo_path" json:"repo_path"`
+	ResourceID gocql.UUID `cql:"resource_id" json:"resource_id"`
+	StackID    gocql.UUID `cql:"stack_id" json:"stack_id"`
+	UpdatedAt  time.Time  `cql:"updated_at" json:"updated_at"`
 }
 
 var (
-	workloadColumns = []string{"builder", "container", "created_at", "id", "kind", "name", "repo_id", "repo_path", "stack_id", "updated_at"}
+	workloadColumns = []string{"builder", "container", "created_at", "id", "kind", "name", "repo_id", "repo_path", "resource_id", "stack_id", "updated_at"}
 
 	workloadMeta = itable.Metadata{
 		M: &table.Metadata{
@@ -397,13 +400,14 @@ func (workload *Workload) GetTable() itable.ITable {
 
 // WorkloadCreateRequest defines model for WorkloadCreateRequest.
 type WorkloadCreateRequest struct {
-	Builder   string     `json:"builder"`
-	Container string     `json:"container"`
-	Kind      string     `json:"kind"`
-	Name      string     `json:"name"`
-	RepoID    gocql.UUID `json:"repo_id"`
-	RepoPath  string     `json:"repo_path"`
-	StackID   gocql.UUID `json:"stack_id"`
+	Builder    string     `json:"builder"`
+	Container  string     `json:"container"`
+	Kind       string     `json:"kind"`
+	Name       string     `json:"name"`
+	RepoID     gocql.UUID `json:"repo_id"`
+	RepoPath   string     `json:"repo_path"`
+	ResourceID gocql.UUID `json:"resource_id"`
+	StackID    gocql.UUID `json:"stack_id"`
 }
 
 // WorkloadListResponse defines model for WorkloadListResponse.
